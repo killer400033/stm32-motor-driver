@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "constants.h"
 #include "motorControl.h"
+#include "simple_rpm_dma.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -111,6 +112,9 @@ int main(void)
   MX_ADC2_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  
+  // Start continuous RPM transmission
+  RPM_DMA_Init();
 
   /* USER CODE END 2 */
 

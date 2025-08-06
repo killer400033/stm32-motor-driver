@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include "main.h"
 #include "constants.h"
+#include "simple_rpm_dma.h"
 
 extern void fixedToFloat(uint32_t *input, float *output);
 
@@ -61,7 +62,9 @@ void mainLoop(void) {
 	while (1) {
 		// Run Speed PID Loop
 		if (rpm_pid_loop_overrun) {
-			doRPMPIDLoop(100, &_vq, &rpm_state);
+			// Get target RPM from UART
+			float target_rpm = (float)RPM_GetTargetValue() / 60.0f;
+			doRPMPIDLoop(target_rpm, &_vq, &rpm_state);
 			rpm_pid_loop_overrun--;
 		}
 
@@ -91,8 +94,14 @@ void doRPMPIDLoop(float set_speed, float *_iq, RPMState *rpm_state) {
 	float time = (float)(curr_time - rpm_state->prev_time) / 1000000.0;
 	float revs = ((float)curr_enc_overrun + ((float)(curr_enc - rpm_state->prev_enc_cnt) / (float)ENCODER_RES));
 	float speed = revs / time;
+	
+	// Convert to RPM (revolutions per minute)
+	int32_t current_rpm = (int32_t)(speed * 60.0f);
 
     *_iq = calculatePID(&(rpm_state->pid_state), (set_speed - speed), time, 0.05, 0.5);
+    
+    // Update RPM for continuous DMA transmission
+    RPM_DMA_UpdateValue(current_rpm);
 
 	rpm_state->prev_enc_cnt = curr_enc;
 	rpm_state->prev_time = curr_time;
